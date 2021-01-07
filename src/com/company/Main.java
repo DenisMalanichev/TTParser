@@ -10,6 +10,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -19,54 +20,65 @@ import java.util.regex.Pattern;
 public class Main {
 
     public static void main(String[] args) {
-        
+
         Scanner sc = new Scanner(System.in);
         System.out.println("Выберете режим работы(парсинг описаний и ссылок(1) или поиск почт(2)");
-        int ans = 1;
+        int ans;
         try {
             ans = sc.nextInt();
         }catch (Exception e){
             System.out.println("Попробуйте еще раз и введите число");
             return;
         }
-        sc.nextLine();
-        String name = sc.nextLine();
-        if(ans == 1){
-            String url = "https://www.tiktok.com/@" + name + "?lang=ru-RU";
-            System.out.println("Описание: ");
-            String desk = grabDesk(url);
-            if(!desk.equals("")){
-                System.out.println(desk);
-            }else{
-                System.out.println("---");
-            }
-            System.out.println("Ссылки: ");
-            String links = grabLinks(url);
-            if(!links.equals("")){
-                System.out.println(links);
-            }else{
-                System.out.println("---");
-            }
-        }else if(ans == 2){
-            String url = "https://www.tiktok.com/@" + name + "?lang=ru-RU";
+        System.out.println("Хотите ли вы брать имена из файла?(1) - да, (2) - нет");
+        int isFile;
+        try {
+            isFile = sc.nextInt();
+        }catch (Exception e){
+            System.out.println("Попробуйте еще раз и введите число");
+            return;
+        }
+        if(isFile == 1){
+            System.out.println("Введите путь до файла:");
+            ArrayList<String> names = null;
+            sc.nextLine();
             try {
-                System.out.println("Проверяется описание " + name + " - " + findEmails(grabDesk(url)));
-                System.out.println("Проверяется ссылки " + name + " - " + findEmails(grabLinks(url)));
+                names = readDataFromFile(sc.nextLine() );
             }catch (Exception e){
-                System.out.println("Ой, кажется такого пользователя нет");
+                System.out.println("Кажется, такого файла нет");
+                return;
             }
+            for(int i =0; i<names.size(); i++){
+                if(ans == 1){
+                    mode1(names.get(i));
+                }else if(i == 2){
+                    mode2(names.get(i));
+                }
+            }
+        }else if(isFile == 2) {
+            sc.nextLine();
+            String name = sc.nextLine();
+            if (ans == 1) {
+               mode1(name);
+            } else if (ans == 2) {
+                mode2(name);
+            }else{
+                System.out.println("Число должно было быть 1 или 2");
+            }
+        }else{
+            System.out.println("Число должно было быть 1 или 2");
         }
 
     }
 
-    public static String grabDesk(String url){
+    public static String grabDesc(String url){
         try {
             Document doc = Jsoup.connect(url).get();
             Elements h2Elements = doc.select("h2.share-desc.mt10");
-            String desk = "";
-            desk = h2Elements.get(0).toString();
+            String desc = "";
+            desc = h2Elements.get(0).toString();
             boolean isOpenArrow = true;
-            char arr[] = desk.toCharArray();
+            char arr[] = desc.toCharArray();
             String output = "";
             for(int i =0; i<arr.length; i++){
                 if(arr[i] == '<'){
@@ -136,5 +148,42 @@ public class Main {
           output += matcher.group();
         }
         return output;
+    }
+
+    public static ArrayList<String> readDataFromFile(String fileLocation) throws Exception{
+           ArrayList<String> names = new ArrayList<>();
+          File file = new File(fileLocation);
+          Scanner sc = new Scanner(file);
+          while(sc.hasNextLine()){
+              names.add(sc.nextLine());
+          }
+           return names;
+    }
+    public static void mode1(String name){
+        String url = "https://www.tiktok.com/@" + name + "?lang=ru-RU";
+        System.out.println("Описание: ");
+        String desc = grabDesc(url);
+        if (!desc.equals("")) {
+            System.out.println(desc);
+        } else {
+            System.out.println("---");
+        }
+        System.out.println("Ссылки: ");
+        String links = grabLinks(url);
+        if (!links.equals("")) {
+            System.out.println(links);
+        } else {
+            System.out.println("---");
+        }
+    }
+
+    public static void mode2(String name){
+        String url = "https://www.tiktok.com/@" + name + "?lang=ru-RU";
+        try {
+            System.out.println("Проверяется описание " + name + " - " + findEmails(grabDesc(url)));
+            System.out.println("Проверяется ссылки " + name + " - " + findEmails(grabLinks(url)));
+        } catch (Exception e) {
+            System.out.println("Ой, кажется такого пользователя нет");
+        }
     }
 }
