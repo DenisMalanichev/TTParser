@@ -10,9 +10,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,7 +22,20 @@ public class Main {
 
     public static void main(String[] args) {
 
+
         Scanner sc = new Scanner(System.in);
+        System.out.println("Введите путь, где будет создане файл с результатами");
+        String pass  = sc.nextLine();
+        Date date = new Date();
+        String fileName = "TTparserRes" + date.getTime() + ".txt";
+
+            File resFile = new File(pass + "/" + fileName);
+        try {
+                resFile.createNewFile();
+        }catch (Exception e){
+            System.out.println("Путь неверный");
+        }
+
         System.out.println("Выберете режим работы(парсинг описаний и ссылок(1) или поиск почт(2)");
         int ans;
         try {
@@ -43,7 +57,7 @@ public class Main {
             ArrayList<String> names = null;
             sc.nextLine();
             try {
-                names = readDataFromFile(sc.nextLine() );
+                names = readDataFromFile(sc.nextLine());
             }catch (Exception e){
                 System.out.println("Кажется, такого файла нет");
                 return;
@@ -51,24 +65,24 @@ public class Main {
             for(int i =0; i<names.size(); i++){
                 if(ans == 1){
                     mode1(names.get(i));
-                }else if(i == 2){
-                    mode2(names.get(i));
+                }else if(ans == 2){
+                    mode2(names.get(i), fileName);
                 }
             }
         }else if(isFile == 2) {
+            System.out.println("Введите имя аккаунта");
             sc.nextLine();
             String name = sc.nextLine();
             if (ans == 1) {
                mode1(name);
             } else if (ans == 2) {
-                mode2(name);
+                mode2(name, fileName);
             }else{
                 System.out.println("Число должно было быть 1 или 2");
             }
         }else{
             System.out.println("Число должно было быть 1 или 2");
         }
-
     }
 
     public static String grabDesc(String url){
@@ -127,7 +141,6 @@ public class Main {
         try {
             WebClient webClient = new WebClient();
             HtmlPage page = webClient.getPage(new File("https://www.tiktok.com/tag/pets?lang=en").toURI().toURL());
-            //doc = Jsoup.connect("https://www.tiktok.com/search?q=" + searchRes + "&lang=ru-RU").get();
             Document doc = Jsoup.parse(page.asXml());
             System.out.println(doc.html());
             Elements h2Elements = doc.select("div.jsx-2261688415");
@@ -151,7 +164,7 @@ public class Main {
     }
 
     public static ArrayList<String> readDataFromFile(String fileLocation) throws Exception{
-           ArrayList<String> names = new ArrayList<>();
+          ArrayList<String> names = new ArrayList<>();
           File file = new File(fileLocation);
           Scanner sc = new Scanner(file);
           while(sc.hasNextLine()){
@@ -172,18 +185,35 @@ public class Main {
         String links = grabLinks(url);
         if (!links.equals("")) {
             System.out.println(links);
+
         } else {
             System.out.println("---");
         }
     }
 
-    public static void mode2(String name){
+    public static void mode2(String name, String fileName){
         String url = "https://www.tiktok.com/@" + name + "?lang=ru-RU";
         try {
             System.out.println("Проверяется описание " + name + " - " + findEmails(grabDesc(url)));
             System.out.println("Проверяется ссылки " + name + " - " + findEmails(grabLinks(url)));
+            String mail = findEmails(grabDesc(url));
+            if(mail.equals("")){
+                mail = findEmails(grabLinks(url));
+            }
+            if(!mail.equals("")) {
+                try {
+                    FileOutputStream fileOutputStream = new FileOutputStream(fileName, true);
+                    fileOutputStream.write(mail.getBytes());
+                    fileOutputStream.write('\n');
+                    fileOutputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         } catch (Exception e) {
             System.out.println("Ой, кажется такого пользователя нет");
         }
     }
+
+
 }
